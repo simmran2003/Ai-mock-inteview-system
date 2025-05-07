@@ -32,7 +32,7 @@ function Interview() {
     
     const fetchInterviewDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/interviews/${InterviewId}`);
+        const response = await fetch(`http://localhost:5001/api/interviews/${InterviewId}`);
         const data = await response.json();
         setInterviewData(data);
       } catch (error) {
@@ -46,7 +46,7 @@ function Interview() {
   const handleStartInterview = async () => {
     setLoading(true);
     try {
-      const interviewRes = await axios.get(`http://localhost:5000/api/interviews/${InterviewId}`);
+      const interviewRes = await axios.get(`http://localhost:5001/api/interviews/${InterviewId}`);
       const { jsonResponse } = interviewRes.data;
       const skills = jsonResponse?.skills;
   
@@ -54,7 +54,17 @@ function Interview() {
         throw new Error("No skills found for this interview");
       }
   
-      // Step 1: Get questions from Django
+      // ✅ Step 0: Check if questions already exist
+      const existingQuestionsRes = await axios.get(`http://localhost:5001/api/questions/${InterviewId}`);
+      const existingQuestions = existingQuestionsRes.data;
+  
+      if (existingQuestions && existingQuestions.length > 0) {
+        console.log("✅ Questions already exist, skipping generation.");
+        router.push(`/dashboard/interview/${InterviewId}/start`);
+        return; // Exit early, don't generate again
+      }
+  
+      // Step 1: Generate questions from Django
       const djangoRes = await fetch("http://127.0.0.1:8000/generate/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,12 +77,11 @@ function Interview() {
   
       const djangoData = await djangoRes.json();
       const Questions = djangoData.questions;
-
-
-      // console.log("✅ RAW Questions from Django before sending to Node:", JSON.stringify(Questions, null, 2));
-
-      // Step 2: Send questions to Node.js server to store them
-      const storeRes = await axios.post(`http://localhost:5000/api/questions/generate/${InterviewId}`, {
+  
+      console.log("✅ RAW Questions from Django before sending to Node:", JSON.stringify(Questions, null, 2));
+  
+      // Step 2: Store questions in Node.js server
+      const storeRes = await axios.post(`http://localhost:5001/api/questions/generate/${InterviewId}`, {
         Questions,
       });
   
@@ -80,7 +89,7 @@ function Interview() {
         throw new Error("Failed to store generated questions");
       }
   
-      console.log("Questions stored:", storeRes.data);
+      console.log("✅ Questions stored:", storeRes.data);
       router.push(`/dashboard/interview/${InterviewId}/start`);
     } catch (error) {
       console.error("Error starting interview:", error);
@@ -89,6 +98,17 @@ function Interview() {
       setLoading(false);
     }
   };
+  
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-blue-500 border-solid mb-6"></div>
+        <h2 className="text-2xl font-semibold text-gray-700">Setting up your interview...</h2>
+        <p className="text-gray-500 mt-2">Please wait while we prepare everything for you.</p>
+      </div>
+    );
+  }
+  
   
   
   return (

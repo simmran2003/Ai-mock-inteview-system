@@ -56,7 +56,7 @@ const handleSubmit = async (event) => {
         nodeFormData.append("jobDescription", jobDescription);
         nodeFormData.append("createdBy", user?.id);
         nodeFormData.append("skills", JSON.stringify(skills)); // ✅ Only skills
-        const response = await axios.post("http://localhost:5000/api/interviews/create", nodeFormData, {
+        const response = await axios.post("http://localhost:5001/api/interviews/create", nodeFormData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
         if (!response.data.interviewId) {

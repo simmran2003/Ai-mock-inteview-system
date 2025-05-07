@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import useSpeechToText from 'react-hook-speech-to-text'
 import { Mic, StopCircle, Save, PlayCircle, PauseCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react';
+
 
 function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
   const [webCamEnabled, setWebCamEnabled] = useState(false)
@@ -16,6 +18,10 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioChunks = useRef([])
   const audioRef = useRef(null)
+  const webcamRef = useRef(null)
+  const [videoRecorder, setVideoRecorder] = useState(null)
+  const videoChunks = useRef([])
+  const [videoBlob, setVideoBlob] = useState(null)
 
   const {
     isRecording,
@@ -50,19 +56,32 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
 
       startSpeechToText()
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      webcamRef.current.srcObject = stream
+
       const recorder = new MediaRecorder(stream)
       setMediaRecorder(recorder)
+      setVideoRecorder(recorder)
 
       audioChunks.current = []
-      recorder.ondataavailable = (e) => audioChunks.current.push(e.data)
+      videoChunks.current = []
+
+      recorder.ondataavailable = (e) => {
+        audioChunks.current.push(e.data)
+        videoChunks.current.push(e.data)
+      }
 
       recorder.onstop = () => {
+        // Handle audio
         const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' })
-        const url = URL.createObjectURL(audioBlob)
-        setAudioURL(url)
-        audioRef.current = new Audio(url)
-        audioRef.current.onended = () => setIsPlaying(false) // reset on end
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setAudioURL(audioUrl)
+        audioRef.current = new Audio(audioUrl)
+        audioRef.current.onended = () => setIsPlaying(false)
+
+        // Handle video
+        const videoBlobTemp = new Blob(videoChunks.current, { type: 'video/mp4' })
+        setVideoBlob(videoBlobTemp)
       }
 
       recorder.start()
@@ -70,31 +89,36 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
   }
 
   const handleAnalyzeAudio = async () => {
-    if (!audioURL && !localStorage.getItem(`recordedAudio-${questionId}`)) {
-      return toast.error('No recorded audio to analyze.');
+    if (!audioURL || !videoBlob) {
+      return toast.error('No recorded audio/video to analyze.')
     }
+    
+    // if (!audioURL && !localStorage.getItem(`recordedAudio-${questionId}`)) {
+    //   return toast.error('No recorded audio to analyze.');
+    // }
   
     try {
       setLoading(true);
   
       // Fetch the blob from the audioURL
-      const res = await fetch(audioURL);
-      const audioBlob = await res.blob();
-  
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'answer.wav');
-  
+      const audioRes = await fetch(audioURL)
+      const audioBlob = await audioRes.blob()
+
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'answer.wav')
+      formData.append('video', videoBlob, 'answer.mp4')
+
       const response = await fetch('http://127.0.0.1:8000/interview/analyze/', {
         method: 'POST',
         body: formData,
-      });
+      })
   
       const data = await response.json();
   
       if (!response.ok) throw new Error(data.error || 'Analysis failed');
   
-      toast.success(`Emotion Detected: ${data.audio_emotion}`);
-    } catch (err) {
+      toast.success(`Emotion Detected: ${data.video_emotion}`);
+     } catch (err) {
       console.error(err);
       toast.error(`Failed to analyze audio: ${err.message}`);
     } finally {
@@ -110,11 +134,29 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
   
     try {
       setLoading(true);
-      handleAnalyzeAudio(); // Call the audio analysis function
-      // Check if correctAnswer is already in localStorage
-      let correctAnswer = localStorage.getItem(`correctAnswer-${questionId}`);
+      handleAnalyzeAudio() // Call the function to analyze audio and video
+      // Step 1: Clean the answer using Gemini
+      const cleanRes = await fetch('http://127.0.0.1:8000/clean-user-answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionDesc: questionDescription,
+          userAnswer: userAnswer,
+        }),
+      });
   
-      // If not, fetch from the server
+      const cleanData = await cleanRes.json();
+  
+      if (!cleanRes.ok) {
+        throw new Error(cleanData.error || 'Failed to clean user answer');
+      }
+  
+      const cleanedUserAnswer = cleanData.cleanedAnswer;
+  
+      // Step 2: Get correct answer (from localStorage or server)
+      let correctAnswer = localStorage.getItem(`correctAnswer-${questionId}`);
       if (!correctAnswer) {
         const correctRes = await fetch('http://127.0.0.1:8000/get-correct-answer/', {
           method: 'POST',
@@ -127,28 +169,24 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
         });
   
         const correctData = await correctRes.json();
-  
         if (!correctRes.ok) {
           throw new Error(correctData.error || 'Failed to fetch correct answer');
         }
   
         correctAnswer = correctData.correctAnswer;
-  
-        // Save to localStorage to avoid future fetches
         localStorage.setItem(`correctAnswer-${questionId}`, correctAnswer);
       }
   
-      // Save both userAnswer and correctAnswer to DB
-      const saveRes = await fetch(`http://localhost:5000/api/questions/${questionId}`, {
+      // Step 3: Save to database
+      const saveRes = await fetch(`http://localhost:5001/api/questions/${questionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userAnswer, correctAnswer }),
+        body: JSON.stringify({ userAnswer: cleanedUserAnswer, correctAnswer }),
       });
   
       const saveData = await saveRes.json();
-  
       if (!saveRes.ok) {
         throw new Error(saveData.message || 'Failed to update answer');
       }
@@ -156,7 +194,7 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
       toast.success('Answer saved successfully to the database!');
       setIsAnswerSaved(true);
   
-      localStorage.setItem(`userAnswer-${questionId}`, userAnswer);
+      localStorage.setItem(`userAnswer-${questionId}`, cleanedUserAnswer);
       if (audioURL) {
         localStorage.setItem(`recordedAudio-${questionId}`, audioURL);
       }
@@ -168,6 +206,7 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
       setLoading(false);
     }
   };
+  
   
   
   
@@ -200,11 +239,20 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
             className='absolute'
             />
             <Webcam
-            mirrored={true}
-            onUserMedia={() => setWebCamEnabled(true)}
-            onUserMediaError={() => setWebCamEnabled(false)}
-            style={{ height: 300, width: '100%', zIndex: 10 }}
+              audio={true}
+              ref={webcamRef}
+              mirrored={true}
+              onUserMedia={() => {
+                setWebCamEnabled(true);
+                if (webcamRef.current?.video) {
+                  webcamRef.current.video.muted = true;
+                }
+              }}
+              onUserMediaError={() => setWebCamEnabled(false)}
+              style={{ height: 300, width: '100%', zIndex: 10 }}
             />
+
+
         </div>
 
         {/* 🎤 Buttons aligned horizontally */}
@@ -232,9 +280,21 @@ function RecordAnswer({ questionId ,setIsAnswerSaved, questionDescription }) {
             className='flex items-center gap-2'
             variant='outline'
             onClick={handleSaveText}
-            >
-            <Save size={20} /> Save Text Answer
-            </Button>
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className='animate-spin h-5 w-5' />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={20} />
+                Save Text Answer
+              </>
+            )}
+          </Button>
+
 
             {/* 🔊 Play/Pause Audio */}
             <Button

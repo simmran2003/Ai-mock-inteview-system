@@ -1,8 +1,9 @@
 const express = require("express");
-const { createInterview, getInterviewById } = require("../controllers/InterviewController");
+const { createInterview, getInterviewById, getInterviewsByUser } = require("../controllers/InterviewController");
 const router = express.Router();
 
 router.post("/create", createInterview);
-router.get("/:interviewId", getInterviewById); // Add route to fetch interview details
+router.get("/:interviewId", getInterviewById);
+router.get("/", getInterviewsByUser); 
 
 module.exports = router;

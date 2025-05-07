@@ -44,3 +44,17 @@ exports.getInterviewById = async (req, res) => {
       res.status(500).json({ message: "Server error", error });
     }
   };
+
+  exports.getInterviewsByUser = async (req, res) => {
+    try {
+        const { createdBy } = req.query;
+        if (!createdBy) {
+            return res.status(400).json({ error: "createdBy query parameter is required" });
+        }
+        const interviews = await Interview.find({ createdBy }).sort({ createdAt: -1 });
+        res.status(200).json(interviews);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+};
