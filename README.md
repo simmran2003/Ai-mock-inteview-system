@@ -36,7 +36,7 @@ An AI-driven mock interview platform that simulates real-world technical intervi
 ## 📁 Key Files
 
 - 📄 [Final Project Report (IEEE Format)](https://drive.google.com/file/d/1AENm31LXqZ4BRr5HaVuqqKRQfBw_d6Xa/view?usp=sharing)
-- 🧠 [Backend - Skill Matching & Parsing](https://drive.google.com/file/d/1s3BWgqEiwhxyQNi1d6c0FAh1pubm9A0t/view?usp=drive_link)
+- 🧠 [Backend - Skill Matching,Resume & Job Description Parsing,Question Generation & Emotion Recognition](https://drive.google.com/file/d/1s3BWgqEiwhxyQNi1d6c0FAh1pubm9A0t/view?usp=drive_link)
 - 📄 [Poster](https://drive.google.com/file/d/1LSPcX2CMVAEwFUoN8-heejzM2TzBVdsP/view?usp=drive_link)
 
 ## 🎬 Demo
