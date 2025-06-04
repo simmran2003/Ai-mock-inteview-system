@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🧠 AI-Powered Mock Interview System
 
-## Getting Started
+An AI-driven mock interview platform that simulates real-world technical interviews using dynamic question generation, multimodal input analysis, and personalized feedback. Built for aspiring candidates to improve both technical skills and communication confidence.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 📄 **Resume & Job Description Parsing**: Extracts key skills from uploaded PDFs using fuzzy string matching.
+- 🎯 **Adaptive Question Generation**: Uses Gemini API to create skill-specific questions with progressive difficulty.
+- 🎙️ **Speech & Video Input Support**: Accepts answers via text, audio (transcribed using Wav2Vec2), or video.
+- 😃 **Emotion & Confidence Analysis**:
+  - Audio Emotion: Hugging Face model (fine-tuned on RAVDESS)
+  - Facial Emotion: Ollama’s Gemma3 using stitched frame grid from user video
+- 📊 **Automated Evaluation**: Combines technical correctness and emotion-based confidence into composite scores.
+- 📝 **Personalized Feedback**: Visual feedback generated using Matplotlib, stored in MongoDB for progress tracking.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js (React)
+- **Backend**: Python (FastAPI)
+- **NLP & Transcription**: Gemini API, Wav2Vec2
+- **Emotion Models**: Hugging Face (Audio), Gemma3 (Video)
+- **Database**: MongoDB
+- **Visualization**: Matplotlib
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📈 Results
 
-## Learn More
+- 89% accuracy in technical evaluation  
+- 84% accuracy in emotion recognition  
+- 17% average user performance improvement over 3 sessions  
+## 📷 Sample Output
 
-To learn more about Next.js, take a look at the following resources:
+- Grid image input to Gemma3 (from video)
+- Feedback dashboard with technical and emotional analysis
+- Analytics plots for session-wise improvement
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Key Files
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 📄 [Final Project Report (IEEE Format)](https://drive.google.com/file/d/1AENm31LXqZ4BRr5HaVuqqKRQfBw_d6Xa/view?usp=sharing)
+- 🧠 [Backend - Skill Matching & Parsing](https://drive.google.com/file/d/1s3BWgqEiwhxyQNi1d6c0FAh1pubm9A0t/view?usp=drive_link)
+- 📄 [Poster](https://drive.google.com/file/d/1LSPcX2CMVAEwFUoN8-heejzM2TzBVdsP/view?usp=drive_link)
 
-## Deploy on Vercel
+## 🎬 Demo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+📹 *Coming Soon — Project walkthrough and demo video will be uploaded here.*
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🤝 Contributions
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
+
+
